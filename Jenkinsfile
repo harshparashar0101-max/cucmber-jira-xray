@@ -22,27 +22,27 @@ pipeline {
                     string(credentialsId: 'XRAY_CLIENT_ID', variable: 'XRAY_CLIENT_ID'),
                     string(credentialsId: 'XRAY_CLIENT_SECRET', variable: 'XRAY_CLIENT_SECRET')
                 ]) {
-                    powershell '''
-                    $body = @{
-                        client_id = $env:XRAY_CLIENT_ID
-                        client_secret = $env:XRAY_CLIENT_SECRET
-                    } | ConvertTo-Json
+                      powershell """
+                      \$body = @{
+                        client_id = '${XRAY_CLIENT_ID}'
+                          client_secret = '${XRAY_CLIENT_SECRET}'
+                        } | ConvertTo-Json
 
-                    $token = Invoke-RestMethod `
-                        -Uri "$env:XRAY_BASE_URL/api/v2/authenticate" `
-                        -Method Post `
-                        -Body $body `
-                        -ContentType "application/json"
+                     \$token = Invoke-RestMethod `
+                         -Uri '${XRAY_BASE_URL}/api/v2/authenticate' `
+                         -Method Post `
+                         -Body \$body `
+                         -ContentType 'application/json'
 
-                    Invoke-RestMethod `
-                        -Uri "$env:XRAY_BASE_URL/api/v2/import/execution/junit?testExecKey=$env:TEST_EXEC_KEY" `
-                        -Method Post `
-                        -Headers @{ Authorization = "Bearer $token" } `
-                        -InFile "target/cucumber.xml" `
-                        -ContentType "application/xml"
+                      Invoke-RestMethod `
+                         -Uri '${XRAY_BASE_URL}/api/v2/import/execution/junit?testExecKey=${params.TEST_EXEC_KEY}' `
+                         -Method Post `
+                         -Headers @{ Authorization = "Bearer \$token" } `
+                         -InFile 'target/cucumber.xml' `
+                          -ContentType 'application/xml'
 
-                    Write-Host "Xray updated successfully: $env:TEST_EXEC_KEY"
-                    '''
+                          Write-Host "Xray updated successfully: ${params.TEST_EXEC_KEY}"
+                          """
                 }
             }
         }
