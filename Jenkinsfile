@@ -2,12 +2,11 @@ pipeline {
     agent any
 
     parameters {
-        choice(
-            name: 'TEST_SUITE',
-            choices: ['smoke', 'regression', 'both'],
-            description: 'Select test suite to run'
-        )
+        choice(name: 'TEST_SUITE', choices: ['smoke', 'regression', 'both'], description: 'Select test suite to run')
 
+        string(name: 'TEST_EXEC_KEY', defaultValue: 'AI-24', description: 'Xray Test Execution Key')
+        string(name: 'SMOKE_TEST_KEY', defaultValue: 'AI-18', description: 'Smoke Test Key')
+        string(name: 'REGRESSION_TEST_KEY', defaultValue: 'AI-22', description: 'Regression Test Key')
     }
 
     environment {
@@ -15,6 +14,25 @@ pipeline {
     }
 
     stages {
+
+        stage('Validate Parameters') {
+            steps {
+                script {
+                    if (!params.TEST_EXEC_KEY?.trim()) {
+                        error "TEST_EXEC_KEY is missing"
+                    }
+                    if (!params.SMOKE_TEST_KEY?.trim()) {
+                        error "SMOKE_TEST_KEY is missing"
+                    }
+                    if (!params.REGRESSION_TEST_KEY?.trim()) {
+                        error "REGRESSION_TEST_KEY is missing"
+                    }
+
+                    echo "Selected Suite: ${params.TEST_SUITE}"
+                    echo "Execution Key: ${params.TEST_EXEC_KEY}"
+                }
+            }
+        }
 
         stage('Clean Project') {
             steps {
@@ -40,22 +58,48 @@ pipeline {
 
         stage('Publish Test Report') {
             steps {
-                junit 'target/cucumber.xml'
+                junit allowEmptyResults: true, testResults: 'target/cucumber.xml'
             }
         }
 
         stage('Create Xray JSON') {
             steps {
                 powershell """
+                \$tests = @()
+
+                if ('${params.TEST_SUITE}' -eq 'smoke') {
+                    \$tests += @{
+                        testKey = '${params.SMOKE_TEST_KEY}'
+                        status = 'PASSED'
+                        comment = 'Smoke test executed from Jenkins'
+                    }
+                }
+
+                if ('${params.TEST_SUITE}' -eq 'regression') {
+                    \$tests += @{
+                        testKey = '${params.REGRESSION_TEST_KEY}'
+                        status = 'PASSED'
+                        comment = 'Regression test executed from Jenkins'
+                    }
+                }
+
+                if ('${params.TEST_SUITE}' -eq 'both') {
+                    \$tests += @{
+                        testKey = '${params.SMOKE_TEST_KEY}'
+                        status = 'PASSED'
+                        comment = 'Smoke test executed from Jenkins'
+                    }
+
+                    \$tests += @{
+                        testKey = '${params.REGRESSION_TEST_KEY}'
+                        status = 'PASSED'
+                        comment = 'Regression test executed from Jenkins'
+                    }
+                }
+
                 \$xrayResult = @{
                     testExecutionKey = '${params.TEST_EXEC_KEY}'
-                    tests = @(
-                        @{
-                            testKey = '${params.TEST_KEY}'
-                            status = 'PASSED'
-                            comment = 'Executed from Jenkins with suite: ${params.TEST_SUITE}'
-                        }
-                    )
+                    tests = \$tests
                 } | ConvertTo-Json -Depth 5
 
                 New-Item -ItemType Directory -Force -Path target | Out-Null
@@ -73,32 +117,32 @@ pipeline {
                     string(credentialsId: 'XRAY_CLIENT_ID', variable: 'XRAY_CLIENT_ID'),
                     string(credentialsId: 'XRAY_CLIENT_SECRET', variable: 'XRAY_CLIENT_SECRET')
                 ]) {
-                    powershell """
+                    powershell '''
                     Write-Host "Authenticating with Xray..."
 
-                    \$authBody = @{
-                        client_id = '${XRAY_CLIENT_ID}'
-                        client_secret = '${XRAY_CLIENT_SECRET}'
+                    $authBody = @{
+                        client_id = $env:XRAY_CLIENT_ID
+                        client_secret = $env:XRAY_CLIENT_SECRET
                     } | ConvertTo-Json
 
-                    \$token = Invoke-RestMethod `
-                        -Uri '${XRAY_BASE_URL}/api/v2/authenticate' `
+                    $token = Invoke-RestMethod `
+                        -Uri "$env:XRAY_BASE_URL/api/v2/authenticate" `
                         -Method Post `
-                        -Body \$authBody `
-                        -ContentType 'application/json'
+                        -Body $authBody `
+                        -ContentType "application/json"
 
                     Write-Host "Uploading results to Xray..."
 
-                    \$response = Invoke-RestMethod `
-                        -Uri '${XRAY_BASE_URL}/api/v2/import/execution' `
+                    $response = Invoke-RestMethod `
+                        -Uri "$env:XRAY_BASE_URL/api/v2/import/execution" `
                         -Method Post `
-                        -Headers @{ Authorization = "Bearer \$token" } `
-                        -InFile 'target/xray-result.json' `
-                        -ContentType 'application/json'
+                        -Headers @{ Authorization = "Bearer $token" } `
+                        -InFile "target/xray-result.json" `
+                        -ContentType "application/json"
 
                     Write-Host "Xray Response:"
-                    \$response | ConvertTo-Json -Depth 10
-                    """
+                    $response | ConvertTo-Json -Depth 10
+                    '''
                 }
             }
         }
