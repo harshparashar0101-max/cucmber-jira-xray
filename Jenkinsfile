@@ -25,7 +25,7 @@ pipeline {
                     tests = @(
                         @{
                             testKey = '${params.TEST_KEY}'
-                            status = 'PASS'
+                            status = 'PASSED'
                             comment = 'Executed from Jenkins automation'
                         }
                     )
