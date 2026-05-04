@@ -1,0 +1,11 @@
+{
+  "fields": {
+    "project": {
+      "key": "AI"
+    },
+    "issuetype": {
+      "name": "Test Execution"
+    }
+  },
+  "testExecutionKey": "AI-24"
+}
