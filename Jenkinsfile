@@ -35,11 +35,11 @@ pipeline {
                          -ContentType 'application/json'
 
                       Invoke-RestMethod `
-                         -Uri '${XRAY_BASE_URL}/api/v2/import/execution/junit?testExecKey=${params.TEST_EXEC_KEY}' `
-                         -Method Post `
-                         -Headers @{ Authorization = "Bearer \$token" } `
-                         -InFile 'target/cucumber.json' `
-                          -ContentType 'application/json'
+                        -Uri '${XRAY_BASE_URL}/api/v2/import/execution/cucumber?testExecKey=${params.TEST_EXEC_KEY}' `
+                        -Method Post `
+                        -Headers @{ Authorization = "Bearer \$token" } `
+                        -InFile 'target/cucumber.json' `
+                         -ContentType 'application/json'
 
                           Write-Host "Xray updated successfully: ${params.TEST_EXEC_KEY}"
                           """
