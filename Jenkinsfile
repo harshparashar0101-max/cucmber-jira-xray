@@ -23,7 +23,7 @@ pipeline {
                     string(credentialsId: 'XRAY_CLIENT_SECRET', variable: 'XRAY_CLIENT_SECRET')
                 ]) {
                       powershell """
-                      \$body = @{
+                        \$body = @{
                         client_id = '${XRAY_CLIENT_ID}'
                           client_secret = '${XRAY_CLIENT_SECRET}'
                         } | ConvertTo-Json
@@ -38,8 +38,8 @@ pipeline {
                          -Uri '${XRAY_BASE_URL}/api/v2/import/execution/junit?testExecKey=${params.TEST_EXEC_KEY}' `
                          -Method Post `
                          -Headers @{ Authorization = "Bearer \$token" } `
-                         -InFile 'target/cucumber.xml' `
-                          -ContentType 'application/xml'
+                         -InFile 'target/cucumber.json' `
+                          -ContentType 'application/json'
 
                           Write-Host "Xray updated successfully: ${params.TEST_EXEC_KEY}"
                           """
