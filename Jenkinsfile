@@ -147,10 +147,17 @@ pipeline {
             }
         }
     }
+        post {
+            always {
+            junit allowEmptyResults: true, testResults: 'target/cucumber.xml'
 
-    post {
-        always {
-            archiveArtifacts artifacts: 'target/*.json, target/*.xml, target/*.html', fingerprint: true, allowEmptyArchive: true
+        cucumber buildStatus: 'UNSTABLE',
+                 fileIncludePattern: '**/cucumber.json',
+                 jsonReportDirectory: 'target'
+
+        archiveArtifacts artifacts: 'target/*.json, target/*.xml, target/*.html',
+                         fingerprint: true,
+                         allowEmptyArchive: true
         }
     }
 }
