@@ -1,8 +1,11 @@
 package runners;
 
+import org.testng.annotations.Test;
+
 import io.cucumber.testng.AbstractTestNGCucumberTests;
 import io.cucumber.testng.CucumberOptions;
 
+@Test
 @CucumberOptions(
         features = "src/test/resources/features",
         glue = "stepdefinitions",
@@ -12,7 +15,9 @@ import io.cucumber.testng.CucumberOptions;
                 "junit:target/cucumber.xml",
                 "html:target/cucumber-report.html"
         },
-        monochrome = true
+        monochrome = true,
+        tags="@smoke"
+        
 )
 public class TestRunner extends AbstractTestNGCucumberTests {
 }
